@@ -6,6 +6,7 @@ from misc.helper import Helper
 from config.model_config import acceptable_latency
 import re
 
+
 @Singleton
 class Environment:
     def __init__(self):
@@ -31,13 +32,13 @@ class Environment:
             self.update_state(action_index)
         except ValueError:
             print("Trying to reach an illegal state. Cost = ", sys.maxsize)
-            return self.curr_state_index, sys.maxsize, False
+            return self.curr_state_index, -1, False
         if len(self.instances) == 0:
-            return self.curr_state_index, sys.maxsize, False
+            return self.curr_state_index, -1, False
         self.distribute_load()
         done = self.check_done()
-        return self.curr_state_index, sys.maxsize, done
-
+        reward = self.compute_reward()
+        return self.curr_state_index, reward, done
 
     def distribute_load(self):
         # reset load
@@ -55,14 +56,16 @@ class Environment:
         return best_instance
 
     def compute_reward(self):
-        #  This is a test
         cost = 0
+        if len(self.instances) == 0:
+            return -1
+
         for instance in self.instances:
-            #print("resources cost: ", instance.cost)
+            # print("resources cost: ", instance.cost)
             cost += instance.cost
-            #print("performance cost: ", instance.get_current_performance_value())
+            # print("performance cost: ", instance.get_current_performance_value())
             cost += instance.get_current_performance_value()
-        return cost
+        return 1 / cost
 
     def update_state(self, action_index):
         action = self.action_space.get(action_index)
@@ -85,7 +88,6 @@ class Environment:
             print("current state =", curr_state)
             self.curr_state_index = self.get_index_of_state(curr_state)
 
-
     def get_index_of_state(self, curr_state):
         if curr_state not in list(self.state_space.values()):
             print("[WARN]: State not found")
@@ -102,4 +104,3 @@ class Environment:
             average_response_time += instance_load_weight * instance_current_response_time
         print("average_response_time: ", average_response_time)
         return average_response_time <= acceptable_latency
-

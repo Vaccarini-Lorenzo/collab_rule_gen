@@ -10,8 +10,7 @@ from model.action import Action
 
 class QLearningTable:
     def __init__(self, state_space_cardinality, action_space_cardinality):
-        self.content = np.empty((state_space_cardinality, action_space_cardinality))
-        self.content.fill(sys.maxsize)
+        self.content = np.zeros((state_space_cardinality, action_space_cardinality))
 
     def epsilon_greedy_policy(self, state_index, epsilon):
         # Randomly generate a number between 0 and 1
@@ -20,7 +19,7 @@ class QLearningTable:
         if random > epsilon:
             # Take the action with the highest value given a state
             # np.argmax can be useful here
-            action = np.argmin(self.content[state_index])
+            action = np.argmax(self.content[state_index])
         # else --> exploration
         else:
             action = Action.get_random_action()

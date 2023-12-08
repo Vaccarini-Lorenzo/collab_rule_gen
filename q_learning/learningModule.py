@@ -25,10 +25,8 @@ class LearningModule:
         state_space = Action.get_state_space()
         action_space = Action.get_action_space()
         self.qLearningTable = QLearningTable(len(state_space), len(action_space))
-        print(state_space)
-        print()
 
-        self.train(100000, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
+        self.train(100, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
 
         # for action in list(action_space.items()):
         #     print(f"{action[0]}: {action[1].method} {action[1].instance.name}")
@@ -47,15 +45,6 @@ class LearningModule:
 
     def train(self, n_training_episodes, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma):
         for episode in trange(n_training_episodes):
-            print()
-            print()
-            print()
-            print()
-            print()
-            print()
-            print()
-            print()
-            print()
             # Reduce epsilon (because we need less and less exploration)
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate * episode)
             # Reset the environment
@@ -63,23 +52,17 @@ class LearningModule:
 
             # repeat
             for step in range(max_steps):
-                print()
-                print()
-                print()
                 # Choose the action At using epsilon greedy policy
                 action_index = self.qLearningTable.epsilon_greedy_policy(state_index, epsilon)
-                print("action_index = ", action_index)
-
                 # Take action At and observe Rt+1 and St+1
                 # Take the action (a) and observe the outcome state(s') and reward (r)
                 new_state_index, reward, done = Environment.instance().execute_action(action_index)
-                print("new_state_index = ", new_state_index)
-                print("reward = ", reward)
-                print("done = ", done)
+                print("Reward: ", reward)
+                print("Done: ", done)
 
                 # Update Q(s,a):= Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
                 self.qLearningTable.content[state_index][action_index] = self.qLearningTable.content[state_index][action_index] + learning_rate * (
-                        reward + gamma * np.min(self.qLearningTable.content[new_state_index]) - self.qLearningTable.content[state_index][action_index])
+                        reward + gamma * np.max(self.qLearningTable.content[new_state_index]) - self.qLearningTable.content[state_index][action_index])
 
                 # If done, finish the episode
                 if done:
