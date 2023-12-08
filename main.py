@@ -1,6 +1,5 @@
-from model.instanceRepository import InstanceRepository
+from model.domain.instanceRepository import InstanceRepository
 from q_learning.learningModule import LearningModule
-from server.server import Server
 
 if __name__ == "__main__":
     # Start server

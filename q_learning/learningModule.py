@@ -1,13 +1,11 @@
-import sys
-
 import numpy as np
 from tqdm import trange
 
-from config import learning_config
-from model.action import Action
-from model.environment import Environment
+from model.env.action import Action
+from model.env.environment import Environment
 from misc.singleton import Singleton
-from model.instanceRepository import InstanceRepository
+from model.domain.instanceRepository import InstanceRepository
+from model.env.state import State
 from q_learning.qLearningTable import QLearningTable
 from config.learning_config import min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma
 
@@ -22,11 +20,26 @@ class LearningModule:
         print("start")
         InstanceRepository.instance().consolidate_repository()
         Environment.instance().set_num_of_req(200)
-        state_space = Action.get_state_space()
+        state_space = State.get_state_space()
         action_space = Action.get_action_space()
-        self.qLearningTable = QLearningTable(len(state_space), len(action_space))
+        self.qLearningTable = QLearningTable(state_space, action_space)
 
-        self.train(100, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
+        # print()
+        # print("instances")
+        # for instance in InstanceRepository.instance().get_all():
+        #     print(instance.name)
+        #
+        print()
+        print("state space")
+        for state in list(state_space.items()):
+            print(f"{state[1].index}: {state[1].name}")
+            print(state[1].valid_actions_mask)
+            print()
+
+        # print("q table")
+        # print(self.qLearningTable.content)
+
+        self.train(10, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
 
         # for action in list(action_space.items()):
         #     print(f"{action[0]}: {action[1].method} {action[1].instance.name}")
@@ -48,25 +61,25 @@ class LearningModule:
             # Reduce epsilon (because we need less and less exploration)
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate * episode)
             # Reset the environment
-            state_index = Environment.instance().reset()
+            state = Environment.instance().reset()
 
             # repeat
             for step in range(max_steps):
                 # Choose the action At using epsilon greedy policy
-                action_index = self.qLearningTable.epsilon_greedy_policy(state_index, epsilon)
+                action_index = self.qLearningTable.epsilon_greedy_policy(state.index, epsilon)
                 # Take action At and observe Rt+1 and St+1
                 # Take the action (a) and observe the outcome state(s') and reward (r)
-                new_state_index, reward, done = Environment.instance().execute_action(action_index)
+                new_state, reward, done = Environment.instance().execute_action(action_index)
                 print("Reward: ", reward)
                 print("Done: ", done)
 
                 # Update Q(s,a):= Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-                self.qLearningTable.content[state_index][action_index] = self.qLearningTable.content[state_index][action_index] + learning_rate * (
-                        reward + gamma * np.max(self.qLearningTable.content[new_state_index]) - self.qLearningTable.content[state_index][action_index])
+                self.qLearningTable.content[state.index][action_index] = self.qLearningTable.content[state.index][action_index] + learning_rate * (
+                        reward + gamma * np.max(self.qLearningTable.content[new_state.index]) - self.qLearningTable.content[state.index][action_index])
 
                 # If done, finish the episode
                 if done:
                     break
 
                 # Our state is the new state
-                state_index = new_state_index
+                state = new_state

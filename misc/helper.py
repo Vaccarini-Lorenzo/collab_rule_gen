@@ -21,7 +21,7 @@ class Helper:
         return new_text
 
     @staticmethod
-    def sort_state(state):
+    def sort_state_name(state):
         words = state.split(" ")
 
         # Sort the list of words alphabetically

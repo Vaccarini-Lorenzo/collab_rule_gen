@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from threading import Timer
-from model.instanceRepository import InstanceRepository
+from model.domain.instanceRepository import InstanceRepository
 from q_learning.learningModule import LearningModule
 
 class Server:
