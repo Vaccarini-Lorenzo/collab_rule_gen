@@ -29,3 +29,14 @@ class Helper:
 
         # Join the sorted list of words back into a string
         return " ".join(words)
+
+    @staticmethod
+    def remove_first_occurrence(instances, removed_instance):
+        index = -1
+        for i, instance in enumerate(instances):
+            if instance.name == removed_instance.name:
+                index = i
+                break
+        if index == -1:
+            raise ValueError
+        instances.pop(index)

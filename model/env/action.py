@@ -3,6 +3,7 @@ import numpy as np
 from model.domain.instanceRepository import InstanceRepository
 from misc.printable import Printable
 from random import randrange
+from config.model_config import max_number_same_instance, max_number_instances
 
 
 class Action(Printable):
@@ -40,23 +41,35 @@ class Action(Printable):
     @staticmethod
     def get_valid_actions_mask(state_name):
         instances = InstanceRepository.instance().get_all()
+
         if state_name == "":
             mask = np.empty(len(instances) * 2)
             mask.fill(1)
             for i in range(len(instances), len(instances) * 2):
                 mask[i] = -1000
+            return mask
+
         mask = np.empty(len(instances) * 2)
         mask.fill(1)
         state_instance_names = state_name.split(" ")
         index = 0
+        # Can't allocate # of same instances > max_number_same_instance
         for instance in instances:
-            if instance.name in state_instance_names:
+            if state_instance_names.count(instance.name) >= max_number_same_instance:
+                mask[index] = -1000
+            if len(state_instance_names) >= max_number_instances:
                 mask[index] = -1000
             index += 1
+        # Can't remove instances that have not been allocated yet
         for instance in instances:
             if instance.name not in state_instance_names:
                 mask[index] = -1000
             index += 1
+
+
         return mask
+
+
+
 
 

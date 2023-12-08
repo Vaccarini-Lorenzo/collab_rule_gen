@@ -3,12 +3,14 @@ instance_cost = dict(
     memory_cost_MB=1
 )
 
-max_number_same_instance = 3
+max_number_instances = 4
 
-acceptable_latency = 1500
+max_number_same_instance = 2
+
+acceptable_latency = 2500
 
 max_req_per_instance = 400
 
-latency_penalize = 0.01
+latency_penalize = 0.05
 
-fail_penalize = 0.5
+fail_penalize = 1.5

@@ -1,4 +1,4 @@
-from random import uniform
+from random import uniform, randrange
 import numpy as np
 
 from model.env.action import Action
@@ -12,27 +12,18 @@ class QLearningTable:
         self.content.fill(1)
 
     def epsilon_greedy_policy(self, state_index, epsilon):
-        action_mask = self.state_space[state_index].valid_actions_mask
-        #print("action_mask", action_mask)
-        filtered_actions = np.multiply(action_mask, self.content[state_index])
-        #print("filtered_actions", filtered_actions)
-        action_index = np.argmax(filtered_actions)
+        random = uniform(0, 1)
+        if random <= epsilon:
+            action_mask = self.state_space[state_index].valid_actions_mask
+            filtered_actions = np.multiply(action_mask, self.content[state_index])
+            action_index = np.argmax(filtered_actions)
+        else:
+            action_mask = self.state_space[state_index].valid_actions_mask
+            valid_indices = []
+            for index, action in enumerate(action_mask):
+                if action > 0:
+                    valid_indices.append(index)
+            valid_index = randrange(len(valid_indices))
+            action_index = valid_indices[valid_index]
         return action_index
 
-
-
-        # I'll think later about the epsilon
-
-        # # Randomly generate a number between 0 and 1
-        # random = uniform(0, 1)
-        # # if random_int > greater than epsilon --> exploitation
-        # if random <= epsilon:
-        #     # Take the action with the highest value given a state
-        #     # np.argmax can be useful here
-        #     action_mask = self.state_space[state_index].valid_actions_mask
-        #     action = np.argmax(self.content[state_index])
-        # # else --> exploration
-        # else:
-        #     action = Action.get_random_action()
-        #
-        # return action

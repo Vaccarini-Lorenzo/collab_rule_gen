@@ -4,6 +4,7 @@ from misc.singleton import Singleton
 from model.env.action import Action
 from misc.helper import Helper
 from config.model_config import acceptable_latency
+from copy import deepcopy
 import re
 
 from model.env.state import State
@@ -38,31 +39,35 @@ class Environment:
         if len(self.instances) == 0:
             return self.curr_state, -1, False
         self.distribute_load()
-        done = self.check_done()
+        average_response_time = self.compute_average_response_time()
+        self.curr_state.set_average_response_time(average_response_time)
+        done = self.check_done(average_response_time)
         reward = self.compute_reward()
         return self.curr_state, reward, done
 
     def update_state(self, action_index):
         action = self.action_space.get(action_index)
-        print("")
-        print("Executing action: " + action.method + " " + action.instance.name)
-        print("Current state: " + self.curr_state.name)
+        # print("")
+        # print("Executing action: " + action.method + " " + action.instance.name)
+        # print("Current state: " + self.curr_state.name)
         if action.method == "ADD":
-            self.instances.append(action.instance)
+            self.instances.append(deepcopy(action.instance))
             new_state_name = action.instance.name if self.curr_state.name == "" else self.curr_state.name + " " + action.instance.name
             new_state_name = Helper.sort_state_name(new_state_name)
             self.curr_state = self.get_state_by_name(new_state_name)
         elif action.method == "REMOVE":
-            self.instances.remove(action.instance)
-            new_state_name = re.sub(rf'{action.instance.name}', "", self.curr_state.name)
+            Helper.remove_first_occurrence(self.instances, action.instance)
+            new_state_name = re.sub(rf'{action.instance.name}', "", self.curr_state.name, count=1)
             new_state_name = Helper.collapse_whitespace(new_state_name)
             new_state_name = Helper.sort_state_name(new_state_name)
             self.curr_state = self.get_state_by_name(new_state_name)
-        print("update state =", self.curr_state.name)
+        # print("New state:")
+        # for name in self.curr_state.name.split(" "):
+        #     print(f"    - {name}")
 
 
     def get_state_by_name(self, new_state_name):
-        print("looking for state " + new_state_name)
+        # print("looking for state " + new_state_name)
         for state in list(self.state_space.items()):
             if state[1].name == new_state_name:
                 return state[1]
@@ -78,13 +83,16 @@ class Environment:
             if curr_state == state[1]:
                 return state[0]
 
-    def check_done(self):
+
+    def compute_average_response_time(self):
         average_response_time = 0
         for instance in self.instances:
             instance_load_weight = instance.current_load / self.n_requests
             instance_current_response_time = instance.get_current_response_time()
             average_response_time += instance_load_weight * instance_current_response_time
-        print("average_response_time: ", average_response_time)
+        return average_response_time
+
+    def check_done(self, average_response_time):
         return average_response_time <= acceptable_latency
 
 
@@ -97,12 +105,12 @@ class Environment:
             best_instance = self.get_best_instance()
             best_instance.current_load += 1
 
-        print()
-        print("distributed load:")
-        for instance in self.instances:
-            print(f"{instance.name}: {instance.current_load} --- latency: {instance.get_current_response_time()} --- value: {instance.get_current_performance_value()}")
-
-        print()
+        # print()
+        # print("distributed load:")
+        # for instance in self.instances:
+        #     print(f"{instance.name}: {instance.current_load} --- latency: {instance.get_current_response_time()} --- value: {instance.get_current_performance_value()}")
+        #
+        # print()
 
 
     def get_best_instance(self):

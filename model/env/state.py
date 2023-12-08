@@ -10,6 +10,7 @@ class State:
         self.index = index
         self.name = name
         self.valid_actions_mask = mask
+        self.average_response_time = -100
 
     def __hash__(self):
         return hash(self.name)
@@ -19,6 +20,9 @@ class State:
 
     def __ne__(self, other):
         return not (self == other)
+
+    def set_average_response_time(self, value):
+        self.average_response_time = value
 
     @staticmethod
     def get_state_space():
@@ -31,7 +35,7 @@ class State:
         combination_map[0] = State(0, "", mask)
         index = 1
         for r in range(1, n + 1):
-            for combination in itertools.combinations(instance_names, r):
+            for combination in itertools.product(instance_names, repeat=r):
                 sorted_state_name = Helper.sort_state_name(" ".join(combination))
                 mask = Action.get_valid_actions_mask(sorted_state_name)
                 combination_map[index] = State(index, sorted_state_name, mask)

@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from tqdm import trange
 
@@ -21,6 +23,20 @@ class LearningModule:
         state_space = State.get_state_space()
         action_space = Action.get_action_space()
         self.qLearningTable = QLearningTable(state_space, action_space)
+        feasible, max_reward, max_reward_configuration, min_response_time, min_response_time_configuration = self.train(1000, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
+
+        if feasible:
+            print("The objective is feasible.")
+        else:
+            print("The objective is not feasible")
+
+        print("max_reward ", max_reward)
+        print("max_reward_configuration ", max_reward_configuration.name)
+        print("min_response_time ", min_response_time)
+        print("min_response_time_configuration ", min_response_time_configuration.name)
+
+
+
         #
         # print()
         # print("instances")
@@ -35,50 +51,14 @@ class LearningModule:
         #     print(f"{state[1].index}: {state[1].name}")
         #     print(state[1].valid_actions_mask)
         #     print()
-        #
-        # for action in list(action_space.items()):
-        #     print(f"{action[0]}: {action[1].method} {action[1].instance.name}")
-        #
-        #
-        # new_state, reward, done = Environment.instance().execute_action(0)
-        # print("Reward: ", reward)
-        # print("Done: ", done)
-        #
-        # new_state, reward, done = Environment.instance().execute_action(1)
-        # print("Reward: ", reward)
-        # print("Done: ", done)
-        #
-        # new_state, reward, done = Environment.instance().execute_action(2)
-        # print("Reward: ", reward)
-        # print("Done: ", done)
 
-
-        self.train(10000, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
-
-
-
-
-
-
-
-
-
-
-
-
-        # Environment.instance().execute_action(0)
-        # Environment.instance().execute_action(2)
-        # Environment.instance().execute_action(4)
-
-        # action_space = Action.get_action_space(Environment.instance().instances)
-        # instance = None
-        # for action in action_space:
-        #     print(action.instance.name)
-        #     instance = action.instance
-        #
-        # Environment.instance().execute_action(Action("REMOVE", instance))
 
     def train(self, n_training_episodes, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma):
+        feasible = False
+        max_reward = -1000
+        max_reward_configuration = None
+        min_response_time = sys.maxsize
+        min_response_time_configuration = None
         for episode in trange(n_training_episodes):
             # Reduce epsilon (because we need less and less exploration)
             epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-decay_rate * episode)
@@ -92,8 +72,13 @@ class LearningModule:
                 # Take action At and observe Rt+1 and St+1
                 # Take the action (a) and observe the outcome state(s') and reward (r)
                 new_state, reward, done = Environment.instance().execute_action(action_index)
-                print("Reward: ", reward)
-                print("Done: ", done)
+
+                if reward > max_reward:
+                    max_reward = reward
+                    max_reward_configuration = new_state
+                if new_state.average_response_time < min_response_time:
+                    min_response_time = new_state.average_response_time
+                    min_response_time_configuration = new_state
 
                 # Update Q(s,a):= Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
                 self.qLearningTable.content[state.index][action_index] = self.qLearningTable.content[state.index][action_index] + learning_rate * (
@@ -101,7 +86,10 @@ class LearningModule:
 
                 # If done, finish the episode
                 if done:
+                    feasible = True
                     break
 
                 # Our state is the new state
                 state = new_state
+
+        return feasible, max_reward, max_reward_configuration, min_response_time, min_response_time_configuration
