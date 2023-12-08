@@ -92,9 +92,18 @@ class Environment:
         # reset load
         for instance in self.instances:
             instance.current_load = 0
+
         for concurrent_req in range(0, self.n_requests):
             best_instance = self.get_best_instance()
             best_instance.current_load += 1
+
+        print()
+        print("distributed load:")
+        for instance in self.instances:
+            print(f"{instance.name}: {instance.current_load} --- latency: {instance.get_current_response_time()} --- value: {instance.get_current_performance_value()}")
+
+        print()
+
 
     def get_best_instance(self):
         best_instance = self.instances[0]

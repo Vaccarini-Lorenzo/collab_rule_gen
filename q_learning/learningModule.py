@@ -13,37 +13,59 @@ from config.learning_config import min_epsilon, max_epsilon, decay_rate, max_ste
 class LearningModule:
     # Potentially pass arguments
     def __init__(self):
-        print("Init the QLearner")
         self.qLearningTable = None
 
     def start(self):
-        print("start")
         InstanceRepository.instance().consolidate_repository()
-        Environment.instance().set_num_of_req(200)
+        Environment.instance().set_num_of_req(400)
         state_space = State.get_state_space()
         action_space = Action.get_action_space()
         self.qLearningTable = QLearningTable(state_space, action_space)
-
+        #
         # print()
         # print("instances")
         # for instance in InstanceRepository.instance().get_all():
         #     print(instance.name)
+        #     print(instance.performance_map)
+        # print()
         #
-        print()
-        print("state space")
-        for state in list(state_space.items()):
-            print(f"{state[1].index}: {state[1].name}")
-            print(state[1].valid_actions_mask)
-            print()
-
-        # print("q table")
-        # print(self.qLearningTable.content)
-
-        self.train(10, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
-
+        # print()
+        # print("state space")
+        # for state in list(state_space.items()):
+        #     print(f"{state[1].index}: {state[1].name}")
+        #     print(state[1].valid_actions_mask)
+        #     print()
+        #
         # for action in list(action_space.items()):
         #     print(f"{action[0]}: {action[1].method} {action[1].instance.name}")
         #
+        #
+        # new_state, reward, done = Environment.instance().execute_action(0)
+        # print("Reward: ", reward)
+        # print("Done: ", done)
+        #
+        # new_state, reward, done = Environment.instance().execute_action(1)
+        # print("Reward: ", reward)
+        # print("Done: ", done)
+        #
+        # new_state, reward, done = Environment.instance().execute_action(2)
+        # print("Reward: ", reward)
+        # print("Done: ", done)
+
+
+        self.train(10000, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
+
+
+
+
+
+
+
+
+
+
+
+
         # Environment.instance().execute_action(0)
         # Environment.instance().execute_action(2)
         # Environment.instance().execute_action(4)

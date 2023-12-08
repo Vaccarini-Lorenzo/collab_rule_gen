@@ -4,10 +4,10 @@ from json import dumps
 class SingleSimulationResult:
 
     def __init__(self, simulation_data):
-        Helper.check_in_dict(simulation_data, "load", "failedRequestPercentage", "ninetyFivePercentileResponseTime")
+        Helper.check_in_dict(simulation_data, "load", "failedRequestPercentage", "meanResponseTime")
         self.load = simulation_data["load"]
         self.fail_percentage = simulation_data["failedRequestPercentage"]
-        self.response_time = simulation_data["ninetyFivePercentileResponseTime"]
+        self.response_time = simulation_data["meanResponseTime"]
 
     def get_values(self):
         return {
