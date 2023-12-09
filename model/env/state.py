@@ -11,6 +11,7 @@ class State:
         self.name = name
         self.valid_actions_mask = mask
         self.average_response_time = -100
+        self.visit_num = 0
 
     def __hash__(self):
         return hash(self.name)
@@ -33,6 +34,7 @@ class State:
         mask = Action.get_valid_actions_mask("")
         # State zero is a state with zero instances
         combination_map[0] = State(0, "", mask)
+        combination_map[0].sign_visit()
         index = 1
         for r in range(1, n + 1):
             for combination in itertools.product(instance_names, repeat=r):
@@ -42,4 +44,7 @@ class State:
                 index += 1
 
         return combination_map
+
+    def sign_visit(self):
+        self.visit_num += 1
 

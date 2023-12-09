@@ -10,32 +10,57 @@ from model.domain.instanceRepository import InstanceRepository
 from model.env.state import State
 from q_learning.qLearningTable import QLearningTable
 from config.learning_config import min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma
+from config.model_config import min_load, max_load, load_jump
+
 
 @Singleton
 class LearningModule:
-    # Potentially pass arguments
     def __init__(self):
         self.qLearningTable = None
 
     def start(self):
         InstanceRepository.instance().consolidate_repository()
-        Environment.instance().set_num_of_req(400)
-        state_space = State.get_state_space()
-        action_space = Action.get_action_space()
-        self.qLearningTable = QLearningTable(state_space, action_space)
-        feasible, max_reward, max_reward_configuration, min_response_time, min_response_time_configuration = self.train(1000, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
+        curr_load = min_load
 
-        if feasible:
-            print("The objective is feasible.")
-        else:
-            print("The objective is not feasible")
+        while curr_load <= max_load:
+            Environment.instance().set_num_of_req(curr_load)
+            state_space = State.get_state_space()
+            action_space = Action.get_action_space()
+            self.qLearningTable = QLearningTable(state_space, action_space)
+            feasible, max_reward, max_reward_configuration, max_reward_done, min_response_time, min_response_time_configuration = self.train(
+                1000, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma)
 
-        print("max_reward ", max_reward)
-        print("max_reward_configuration ", max_reward_configuration.name)
-        print("min_response_time ", min_response_time)
-        print("min_response_time_configuration ", min_response_time_configuration.name)
+            print("max_reward ", max_reward)
+            print("max_reward_configuration ", max_reward_configuration.name)
+            print("max_reward_done ", max_reward_done)
+            print("min_response_time ", min_response_time)
+            print("min_response_time_configuration ", min_response_time_configuration.name)
 
+            print()
+            print()
 
+            if feasible:
+                print("The objective is feasible.")
+                done = False
+                state = Environment.instance().reset()
+                iteration_counter = 0
+                while not done and iteration_counter < 20:
+                    action_mask = self.qLearningTable.state_space[state.index].valid_actions_mask
+                    filtered_actions = np.multiply(action_mask, self.qLearningTable.content[state.index])
+                    action_index = np.argmax(filtered_actions)
+                    state, reward, done = Environment.instance().execute_action(action_index)
+                    iteration_counter += 1
+                if not done:
+                    print("Cycle detected...")
+                print(state.name, state.average_response_time, done)
+            else:
+                print("The objective is not feasible")
+
+            print()
+            print()
+            print()
+
+            curr_load += load_jump
 
         #
         # print()
@@ -45,13 +70,6 @@ class LearningModule:
         #     print(instance.performance_map)
         # print()
         #
-        # print()
-        # print("state space")
-        # for state in list(state_space.items()):
-        #     print(f"{state[1].index}: {state[1].name}")
-        #     print(state[1].valid_actions_mask)
-        #     print()
-
 
     def train(self, n_training_episodes, min_epsilon, max_epsilon, decay_rate, max_steps, learning_rate, gamma):
         feasible = False
@@ -76,13 +94,19 @@ class LearningModule:
                 if reward > max_reward:
                     max_reward = reward
                     max_reward_configuration = new_state
+                    max_reward_done = done
                 if new_state.average_response_time < min_response_time:
                     min_response_time = new_state.average_response_time
                     min_response_time_configuration = new_state
 
                 # Update Q(s,a):= Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-                self.qLearningTable.content[state.index][action_index] = self.qLearningTable.content[state.index][action_index] + learning_rate * (
-                        reward + gamma * np.max(self.qLearningTable.content[new_state.index]) - self.qLearningTable.content[state.index][action_index])
+                self.qLearningTable.content[state.index][action_index] = self.qLearningTable.content[state.index][
+                                                                             action_index] + learning_rate * (
+                                                                                 reward + gamma * np.max(
+                                                                             self.qLearningTable.content[
+                                                                                 new_state.index]) -
+                                                                                 self.qLearningTable.content[
+                                                                                     state.index][action_index])
 
                 # If done, finish the episode
                 if done:
@@ -92,4 +116,4 @@ class LearningModule:
                 # Our state is the new state
                 state = new_state
 
-        return feasible, max_reward, max_reward_configuration, min_response_time, min_response_time_configuration
+        return feasible, max_reward, max_reward_configuration, max_reward_done, min_response_time, min_response_time_configuration

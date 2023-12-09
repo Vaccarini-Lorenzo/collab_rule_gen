@@ -3,7 +3,7 @@ import sys
 from misc.singleton import Singleton
 from model.env.action import Action
 from misc.helper import Helper
-from config.model_config import acceptable_latency
+from config.model_config import acceptable_latency, loop_penalize, instance_penalize
 from copy import deepcopy
 import re
 
@@ -26,23 +26,32 @@ class Environment:
 
     def reset(self):
         self.instances = []
+        self.state_space = State.get_state_space()
         self.curr_state = self.state_space.get(0)
         return self.curr_state
 
     def execute_action(self, action_index):
-        # new_state_index, reward, done
         try:
             self.update_state(action_index)
         except ValueError:
-            print("Trying to reach an illegal state. Cost = ", sys.maxsize)
-            return self.curr_state, -1, False
+            print("Trying to reach an illegal state")
+            self.curr_state.set_average_response_time(sys.maxsize)
+            return self.curr_state, -100, False
+
         if len(self.instances) == 0:
-            return self.curr_state, -1, False
+            self.curr_state.set_average_response_time(sys.maxsize)
+            return self.curr_state, -100, False
+
         self.distribute_load()
         average_response_time = self.compute_average_response_time()
         self.curr_state.set_average_response_time(average_response_time)
-        done = self.check_done(average_response_time)
         reward = self.compute_reward()
+        self.curr_state.sign_visit()
+        reward -= self.curr_state.visit_num * loop_penalize
+        reward -= len(self.instances) * instance_penalize
+        done = self.check_done(average_response_time)
+        if done:
+            reward += 5
         return self.curr_state, reward, done
 
     def update_state(self, action_index):
@@ -130,4 +139,4 @@ class Environment:
             cost += instance.cost
             # print("performance cost: ", instance.get_current_performance_value())
             cost += instance.get_current_performance_value()
-        return 1 / cost
+        return 1 / cost * 10000

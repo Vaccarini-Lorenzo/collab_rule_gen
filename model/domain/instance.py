@@ -55,11 +55,15 @@ class Instance(Printable):
             }
 
     def get_current_response_time(self):
+        if self.current_load >= config.model_config.max_req_per_instance:
+            return self.performance_map[config.model_config.max_req_per_instance]["response_time"]
         return self.performance_map[self.current_load]["response_time"]
 
     def get_current_performance_value(self):
+        # unable_to_process_req_num = 0
         if self.current_load >= config.model_config.max_req_per_instance:
             current_performance = self.performance_map[config.model_config.max_req_per_instance]
+            # unable_to_process_req_num = self.current_load - config.model_config.max_req_per_instance
         else:
             current_performance = self.performance_map[self.current_load]
         latency_cost = config.model_config.latency_penalize * max(0, current_performance[
